@@ -1,0 +1,450 @@
+<<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Legado del Sol Fragmentado - Cartografía</title>
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        /* Ajustes específicos para el mapa visual y los videos flotantes */
+        .mapa-grafico-contenedor {
+            position: relative;
+            width: 100%;
+            max-width: 850px;
+            height: 580px;
+            margin: 0 auto 25px auto;
+            border: 4px solid #272f5a;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.9);
+            background-color: #7162b5; /* Verde base de la ilustración */
+        }
+
+        /* Bloqueo total de interacción táctil/clic en el mapa */
+        .capa-mapa-bloqueada {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Imposibilita tocar el mapa */
+            z-index: 10;
+        }
+
+        /* SVG del mapa con textura de grabado */
+        .mapa-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Etiquetas e indicadores de lugares en el mapa */
+        .etiqueta-lugar {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            padding: 4px 8px;
+            background: rgba(18, 14, 11, 0.85);
+            border: 1px solid #27465a;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            color: #5d677a;
+            white-space: nowrap;
+            transition: all 0.5s ease;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .etiqueta-lugar .punto-lugar {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #273b5a;
+            transition: all 0.5s ease;
+        }
+
+        /* Estado iluminado cuando el jugador llega al lugar */
+        .etiqueta-lugar.iluminado {
+            background: rgba(44, 29, 17, 0.95);
+            border-color: #0f66f1;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+            z-index: 20;
+        }
+
+        .etiqueta-lugar.iluminado .punto-lugar {
+            background-color: #31ddf4;
+            box-shadow: 0 0 10px #79e0fa, 0 0 18px #d6e78f;
+            transform: scale(1.5);
+        }
+
+        /* Modal / Overlay del Video gigante sobre el mapa */
+        .overlay-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 7, 5, 0.92);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay-video.activo {
+            display: flex;
+        }
+
+        .contenedor-reproductor-gigante {
+            width: 90%;
+            max-width: 700px;
+            background: #1c1512;
+            border: 2px solid #0fb8f1;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(15, 64, 241, 0.4);
+            text-align: center;
+        }
+
+        .video-elemento {
+            width: 100%;
+            max-height: 360px;
+            border-radius: 4px;
+            background: #000;
+        }
+
+        .btn-cerrar-video {
+            margin-top: 15px;
+            padding: 12px 25px;
+            background: #00c1d3;
+            color: #fff;
+            font-family: 'Roboto Serif', serif;
+            font-size: 1rem;
+            font-weight: bold;
+            border: 1px solid #0f16f1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cerrar-video:hover {
+            background: #22b8e6;
+            box-shadow: 0 0 12px rgba(3, 3, 174, 0.6);
+        }
+
+        /* Opciones narrativas de mayor tamaño y prioridad */
+        .seccion-decisiones {
+            background: #18120e;
+            border: 2px solid #3e598b;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+        }
+
+        .titulo-descriptivo {
+            color: #0f66f1;
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+        }
+
+        .texto-narrativo {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: #c5dee2;
+            margin-bottom: 25px;
+        }
+
+        .opciones-prioritarias {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn-opcion-prioritaria {
+            font-family: 'Roboto Serif', serif;
+            font-size: 1.15rem;
+            font-weight: bold;
+            padding: 16px 22px;
+            background: linear-gradient(180deg, #15253a 0%, #20140b 100%);
+            color: #1282f3;
+            border: 2px solid #3e618b;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-opcion-prioritaria:hover {
+            background: linear-gradient(180deg, #003fd3 0%, #002ba0 100%);
+            color: #ffffff;
+            border-color: #0fa2f1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 77, 211, 0.5);
+        }
+
+        .btn-opcion-prioritaria::after {
+            content: '➔';
+            font-size: 1.3rem;
+            color: #0f93f1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-principal">
+        <h1>Cartografía del Reino</h1>
+        <h2>Travesía de Sir William</h2>
+
+      <img src="imagen.jpg" alt="" width="900" height="600">
+
+            <!-- Etiquetas e Indicadores de los 13 Nodos que se iluminan -->
+            <div class="etiqueta-lugar iluminado" id="pin-baluarte" style="top: 700px; left: 1100px">
+                <div class="punto-lugar"></div><span>Baluarte del Alba</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-llanuras" style="top: 300px; left: 1000px;">
+                <div class="punto-lugar"></div><span>Llanuras Soleadas</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-molino" style="top: 430px; left: 50%;">
+                <div class="punto-lugar"></div><span>El Viejo Molino</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-puente" style="top: 68%; left: 60%;">
+                <div class="punto-lugar"></div><span>Puente de las Montañas</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-abismo" style="top: 32%; left: 48%;">
+                <div class="punto-lugar"></div><span>Caída en el Abismo</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-atalaya" style="top: 58%; left: 66%;">
+                <div class="punto-lugar"></div><span>Ruinas de la Atalaya</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-bosque" style="top: 88%; left: 62%;">
+                <div class="punto-lugar"></div><span>Bosque Susurrante</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-rio" style="top: 92%; left: 45%;">
+                <div class="punto-lugar"></div><span>Paso del Río</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-troll" style="top: 85%; left: 50%;">
+                <div class="punto-lugar"></div><span>Duelo con el Troll</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-profundo" style="top: 62%; left: 38%;">
+                <div class="punto-lugar"></div><span>Bosque Profundo</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-encrucijada" style="top: 80%; left: 42%;">
+                <div class="punto-lugar"></div><span>Villa de la Encrucijada</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-costa" style="top: 80%; left: 26%;">
+                <div class="punto-lugar"></div><span>Costa del Naufragio</span>
+            </div>
+            <div class="etiqueta-lugar" id="pin-templo" style="top: 99%; left: 34%;">
+                <div class="punto-lugar"></div><span>Templo del Sol</span>
+            </div>
+
+            <!-- Overlay para Reproductor de Video Flotante Gigante sobre el Mapa -->
+            <div class="overlay-video" id="overlay-video">
+                <div class="contenedor-reproductor-gigante">
+                    <h2 id="titulo-video" style="color: #0f87f1; margin-bottom: 10px;">Recurso Audiovisual Embebido</h2>
+                    <video class="video-elemento" id="reproductor-video" controls autoplay>
+                        <source id="fuente-video" src="" type="video/mp4">
+                        Tu navegador no soporta videos HTML5.
+                    </video>
+                    <button class="btn-cerrar-video" onclick="cerrarVideo()">Continuar Aventura ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Decisiones Prioritario -->
+        <div class="seccion-decisiones">
+            <h2 class="titulo-descriptivo" id="titulo-lugar">Inicio de la Historia</h2>
+            <p class="texto-narrativo" id="texto-lugar">
+                Las frías torres del Baluarte del Alba quedan a tus espaldas. Ante ti se despliega un mundo desconocido sin senderos marcados. ¿Hacia dónde dirigirás tus pasos?
+            </p>
+
+            <div class="opciones-prioritarias" id="contenedor-opciones">
+                <!-- Se generan dinámicamente con JS -->
+            </div>
+        </div>
+
+        <nav style="margin-top: 30px;">
+            <a href="index.html">Volver al Inicio</a>
+            <a href="aventura.html">Reiniciar Mapa</a>
+            <a href="guia.html">Guía del Caballero</a>
+        </nav>
+    </div>
+
+    <script>
+        // Datos con rutas y videos para los 3 lugares especificados
+        const datosAventura = {
+            baluarte: {
+                titulo: "Baluarte del Alba",
+                texto: "Las frías torres del Baluarte del Alba quedan a tus espaldas. Es el punto de partida de tu aventura.",
+                opciones: [
+                    { texto: "Caminar hacia las praderas del norte", destino: "llanuras" },
+                    { texto: "Adentrarse en los árboles del sur", destino: "bosque" }
+                ]
+            },
+            llanuras: {
+                titulo: "Llanuras Soleadas",
+                texto: "La brisa tibia acaricia tu rostro mientras caminas entre la hierba dorada.",
+                opciones: [
+                    { texto: "Avanzar hacia la estructura de las palas", destino: "molino" },
+                    { texto: "Subir a las Ruinas de la Atalaya", destino: "atalaya" }
+                ]
+            },
+            molino: {
+                titulo: "El Viejo Molino",
+                texto: "Agradecido por tu ayuda, el molinero te ofrece refugio y pan caliente para reponer fuerzas.",
+                opciones: [
+                    { texto: "Dirigirse al peligroso Puente de las Montañas", destino: "puente" }
+                ]
+            },
+            puente: {
+                titulo: "Puente de las Montañas",
+                texto: "El puente de cuerdas bambolea peligrosamente sobre un precipicio sin fondo.",
+                opciones: [
+                    { texto: "Intentar cruzar las cuerdas", destino: "abismo" },
+                    { texto: "Descender hacia la Villa de la Encrucijada", destino: "encrucijada" }
+                ]
+            },
+            abismo: {
+                titulo: "Caída en el Abismo",
+                texto: "Al intentar salvar tus pertenencias pierdes el equilibrio y caes al vacío... Debes reiniciar en el Baluarte.",
+                opciones: [
+                    { texto: "Regresar al Baluarte del Alba", destino: "baluarte" }
+                ]
+            },
+            atalaya: {
+                titulo: "Ruinas de la Atalaya",
+                texto: "Exploras las ruinas de una antigua torre de observación abandonada.",
+                opciones: [
+                    { texto: "Descender hacia el Puente de las Montañas", destino: "puente" }
+                ]
+            },
+            bosque: {
+                titulo: "Bosque Susurrante",
+                texto: "Los árboles ancestrales entrelazan sus copas impidiendo el paso directo de la luz.",
+                opciones: [
+                    { texto: "Enfrentar la sombra entre la vegetación", destino: "troll" },
+                    { texto: "Seguir el cauce hacia el Paso del Río", destino: "rio" }
+                ]
+            },
+            rio: {
+                titulo: "Paso del Río",
+                texto: "Sigues la corriente del río buscando un vado seguro para cruzar.",
+                opciones: [
+                    { texto: "Cruzar el río hacia la criatura", destino: "troll" }
+                ]
+            },
+            troll: {
+                titulo: "Duelo con el Troll",
+                texto: "Un voraz troll emerge del cruce. Su rugido estremece la tierra mientras observas el video con atención para hallar su debilidad.",
+                video: "troll.mp4",
+                opciones: [
+                    { texto: "Internarse en la densidad del Bosque Profundo", destino: "profundo" }
+                ]
+            },
+            profundo: {
+                titulo: "Bosque Profundo",
+                texto: "Las sombras espesas envuelven el sotobosque. Un video místico revela el camino secreto.",
+                video: "bosque.mp4",
+                opciones: [
+                    { texto: "Salir hacia la Villa de la Encrucijada", destino: "encrucijada" }
+                ]
+            },
+            encrucijada: {
+                titulo: "Villa de la Encrucijada",
+                texto: "Un pequeño asentamiento de cazadores y pescadores te brinda descanso breve.",
+                opciones: [
+                    { texto: "Caminar hacia la Costa del Naufragio", destino: "costa" }
+                ]
+            },
+            costa: {
+                titulo: "Costa del Naufragio",
+                texto: "Los restos de antiguos galeones yacen encallados. Entre el muelle abandonado se proyecta un fragmento audiovisual del mar.",
+                video: "naufragio.mp4",
+                opciones: [
+                    { texto: "Entrar al Templo del Sol con las claves halladas", destino: "templo" }
+                ]
+            },
+            templo: {
+                titulo: "Templo del Sol",
+                texto: "¡Has alcanzado el clímax! Los pesados engranajes de piedra giran con un estruendo sagrado restaurando el amuleto del Sol Primigenio.",
+                opciones: [
+                    { texto: "Comenzar una nueva travesía", destino: "baluarte" }
+                ]
+            }
+        };
+
+        function viajarA(idLugar) {
+            const info = datosAventura[idLugar];
+            if(!info) return;
+
+            // Actualizar panel narrativo
+            document.getElementById('titulo-lugar').innerText = info.titulo;
+            document.getElementById('texto-lugar').innerText = info.texto;
+
+            // Generar botones de opción prioritarios
+            const contOpciones = document.getElementById('contenedor-opciones');
+            contOpciones.innerHTML = '';
+            info.opciones.forEach(opc => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-opcion-prioritaria';
+                btn.innerText = opc.texto;
+                btn.onclick = () => viajarA(opc.destino);
+                contOpciones.appendChild(btn);
+            });
+
+            // Iluminar el lugar actual en el mapa (y mantener historial de visitados)
+            document.querySelectorAll('.etiqueta-lugar').forEach(pin => pin.classList.remove('iluminado'));
+            const pinActual = document.getElementById('pin-' + idLugar);
+            if(pinActual) {
+                pinActual.classList.add('iluminado');
+            }
+
+            // Si el lugar contiene video embebido (Troll, Bosque Profundo, Costa), mostrar overlay gigante
+            if(info.video) {
+                reproducirVideoFlotante(info.titulo, info.video);
+            }
+        }
+
+        function reproducirVideoFlotante(titulo, urlVideo) {
+            const overlay = document.getElementById('overlay-video');
+            const reproductor = document.getElementById('reproductor-video');
+            const fuente = document.getElementById('fuente-video');
+            const tituloVid = document.getElementById('titulo-video');
+
+            tituloVid.innerText = "Recurso Audiovisual: " + titulo;
+            fuente.src = urlVideo;
+            reproductor.load();
+            overlay.classList.add('activo');
+
+            // Cerrar automáticamente cuando finaliza el video
+            reproductor.onended = function() {
+                cerrarVideo();
+            };
+        }
+
+        function cerrarVideo() {
+            const overlay = document.getElementById('overlay-video');
+            const reproductor = document.getElementById('reproductor-video');
+            reproductor.pause();
+            overlay.classList.remove('activo');
+        }
+
+        // Carga inicial
+        window.onload = function() {
+            viajarA('baluarte');
+        };
+    </script>
+
+</body>
+</html>
